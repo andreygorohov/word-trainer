@@ -1,4 +1,4 @@
-const CACHE = "wordtrainer-v2";
+const CACHE = "wordtrainer-v3";
 const ASSETS = [
 	"./",
 	"./index.html",

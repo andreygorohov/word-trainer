@@ -1,6 +1,9 @@
+const MISTAKES_KEY = "__mistakes__";
+
 const STORAGE_KEYS = {
 	settings: "wordtrainer:settings",
 	stats: (lessonKey, direction) => `wordtrainer:stats:${lessonKey}:${direction}`,
+	globalMistakes: "wordtrainer:global-mistakes",
 };
 
 // Через скільки карток повертати слово, в якому помилився.
@@ -54,6 +57,7 @@ class WordTrainer {
 			mistakesEmpty: root.querySelector("#mistakesEmpty"),
 		};
 
+		this.refreshMistakesLesson();
 		this.state = this.loadSettings();
 		this.advanceTimer = null;
 		this.awaitingAdvance = false;
@@ -69,8 +73,9 @@ class WordTrainer {
 	}
 
 	loadSettings() {
+		const firstRealKey = this.lessonKeys.find((k) => k !== MISTAKES_KEY) || this.lessonKeys[0];
 		const fallback = {
-			lessonKey: this.lessonKeys[0],
+			lessonKey: firstRealKey,
 			direction: "ua-en",
 			order: "sequential",
 			sound: "on",
@@ -78,12 +83,44 @@ class WordTrainer {
 		try {
 			const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.settings));
 			if (saved && this.lessons[saved.lessonKey]) {
+				// Don't restore mistakes lesson if it's empty
+				if (saved.lessonKey === MISTAKES_KEY && !Object.keys(this.lessons[MISTAKES_KEY].words).length) {
+					return fallback;
+				}
 				return { ...fallback, ...saved };
 			}
 		} catch (_) {
 			/* ignore corrupted settings */
 		}
 		return fallback;
+	}
+
+	loadGlobalMistakes() {
+		try {
+			return JSON.parse(localStorage.getItem(STORAGE_KEYS.globalMistakes)) || {};
+		} catch (_) {
+			return {};
+		}
+	}
+
+	saveGlobalMistake(uaWord, enWord) {
+		const gm = this.loadGlobalMistakes();
+		const entry = gm[uaWord] || { en: enWord, count: 0 };
+		entry.en = enWord;
+		entry.count += 1;
+		gm[uaWord] = entry;
+		localStorage.setItem(STORAGE_KEYS.globalMistakes, JSON.stringify(gm));
+		this.refreshMistakesLesson(gm);
+	}
+
+	refreshMistakesLesson(gm) {
+		if (!gm) gm = this.loadGlobalMistakes();
+		const sorted = Object.entries(gm).sort((a, b) => b[1].count - a[1].count);
+		this.lessons[MISTAKES_KEY].words = Object.fromEntries(
+			sorted.map(([ua, { en }]) => [ua, en])
+		);
+		const opt = this.dom.lessonSelect.querySelector(`option[value="${MISTAKES_KEY}"]`);
+		if (opt) opt.textContent = `⚠ Складні (${sorted.length})`;
 	}
 
 	saveSettings() {
@@ -203,8 +240,28 @@ class WordTrainer {
 			pairs = customPairs;
 		} else {
 			const words = this.lessons[this.state.lessonKey].words;
+			if (!Object.keys(words).length && this.state.lessonKey === MISTAKES_KEY) {
+				this.dom.prompt.textContent = "Помилок ще немає";
+				this.dom.input.disabled = true;
+				this.dom.checkBtn.disabled = true;
+				this.dom.hintBtn.disabled = true;
+				this.dom.skipBtn.disabled = true;
+				this.dom.clearBtn.hidden = true;
+				this.dom.speakBtn.hidden = true;
+				this.dom.retryBtn.hidden = true;
+				this.dom.restartBtn.hidden = true;
+				this.dom.progressFill.style.width = "0%";
+				this.dom.position.textContent = "0 / 0";
+				this.dom.correctCount.textContent = "✓ 0";
+				this.dom.errorCount.textContent = "✗ 0";
+				this.clearFeedback();
+				return;
+			}
+			// Mistakes lesson always uses ua-en direction (words are stored as UA → EN).
+			const effectiveDirection =
+				this.state.lessonKey === MISTAKES_KEY ? "ua-en" : this.state.direction;
 			pairs = Object.entries(words).map(([ua, en]) =>
-				this.state.direction === "ua-en"
+				effectiveDirection === "ua-en"
 					? { question: ua, answer: en }
 					: { question: en, answer: ua }
 			);
@@ -308,6 +365,12 @@ class WordTrainer {
 
 		this.stats[item.question] = (this.stats[item.question] || 0) + 1;
 		this.saveStats();
+
+		// Зберігаємо у глобальний список складних (UA → EN завжди).
+		const uaWord = this.state.direction === "ua-en" ? item.question : item.answer;
+		const enWord = this.state.direction === "ua-en" ? item.answer : item.question;
+		this.saveGlobalMistake(uaWord, enWord);
+
 		this.renderMistakes();
 		this.updateProgress();
 	}
