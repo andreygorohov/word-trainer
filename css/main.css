@@ -284,6 +284,12 @@ body {
 	opacity: 0.7;
 }
 
+.answer-input::-webkit-search-cancel-button,
+.answer-input::-webkit-search-decoration {
+	-webkit-appearance: none;
+	appearance: none;
+}
+
 .answer-input:focus {
 	border-color: var(--accent);
 }
