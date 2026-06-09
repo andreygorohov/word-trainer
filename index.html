@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+	<meta name="theme-color" content="#0f1216">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="Word Trainer">
+	<link rel="manifest" href="manifest.json">
+	<link rel="apple-touch-icon" href="icons/icon-192.png">
+	<link rel="icon" type="image/png" href="icons/icon-192.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap"
+		rel="stylesheet">
+	<link rel="stylesheet" href="css/main.css">
+	<title>Word Trainer — тренажер слів</title>
+</head>
+
+<body>
+	<div class="app">
+		<header class="app__header">
+			<h1 class="app__title">Word Trainer</h1>
+
+			<div class="controls">
+				<label class="field">
+					<span class="field__label">Набір</span>
+					<select id="lessonSelect" class="select"></select>
+				</label>
+
+				<div class="field">
+					<span class="field__label">Напрям</span>
+					<div class="toggle-group" id="directionToggle">
+						<button type="button" data-value="ua-en">UA → EN</button>
+						<button type="button" data-value="en-ua">EN → UA</button>
+					</div>
+				</div>
+
+				<div class="field">
+					<span class="field__label">Порядок</span>
+					<div class="toggle-group" id="orderToggle">
+						<button type="button" data-value="sequential">За порядком</button>
+						<button type="button" data-value="random">Перемішати</button>
+					</div>
+				</div>
+
+				<div class="field" id="soundField" hidden>
+					<span class="field__label">Звук</span>
+					<div class="toggle-group" id="soundToggle">
+						<button type="button" data-value="on">Увімк</button>
+						<button type="button" data-value="off">Вимк</button>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<main class="card">
+			<div class="card__progress">
+				<div class="progress-bar">
+					<div class="progress-bar__fill" id="progressFill"></div>
+				</div>
+				<div class="stats">
+					<span class="stat" id="position">0 / 0</span>
+					<span class="stat stat--ok" id="correctCount">✓ 0</span>
+					<span class="stat stat--err" id="errorCount">✗ 0</span>
+				</div>
+			</div>
+
+			<div class="prompt-row">
+				<div class="card__prompt" id="prompt"></div>
+				<button type="button" class="icon-btn" id="speakBtn"
+					aria-label="Озвучити англійською" title="Озвучити англійською" hidden>🔊</button>
+			</div>
+
+			<form class="card__form" id="answerForm" autocomplete="off">
+				<div class="input-wrap">
+					<input type="text" id="answer" class="answer-input"
+						autocomplete="off" autocapitalize="off" autocorrect="off"
+						spellcheck="false" placeholder="Введіть переклад…">
+					<button type="button" class="clear-btn" id="clearBtn"
+						aria-label="Очистити" title="Очистити (Esc)" hidden>×</button>
+				</div>
+				<div class="feedback" id="feedback"></div>
+
+				<div class="card__actions">
+					<button type="submit" class="btn btn--primary" id="checkBtn">Перевірити</button>
+					<button type="button" class="btn" id="hintBtn">Підказка</button>
+					<button type="button" class="btn" id="skipBtn">Пропустити</button>
+					<button type="button" class="btn btn--primary" id="retryBtn" hidden>Повторити складні</button>
+					<button type="button" class="btn" id="restartBtn" hidden>Почати знову</button>
+				</div>
+				<div class="hint-note">Enter — перевірити / далі · Esc — очистити</div>
+			</form>
+		</main>
+
+		<section class="mistakes">
+			<h2 class="mistakes__title">Помилки</h2>
+			<div class="mistakes__empty" id="mistakesEmpty">Поки що помилок немає.</div>
+			<div class="mistakes__list" id="mistakesList"></div>
+		</section>
+	</div>
+
+	<script src="js/words.js"></script>
+	<script src="js/main.js"></script>
+	<script>
+		if ("serviceWorker" in navigator) {
+			window.addEventListener("load", () => {
+				navigator.serviceWorker.register("sw.js").catch(() => {});
+			});
+		}
+	</script>
+</body>
+
+</html>
